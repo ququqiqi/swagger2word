@@ -8,34 +8,48 @@
     <version>1.5.0-SNAPSHOT</version>
     <name>swagger2word</name>
 
+    <properties>
+        <skipTests>true</skipTests>
+        <java.version>17</java.version>
+        <springfox-version>2.9.2</springfox-version>
+        <springboot-version>2.7.18</springboot-version>
+    </properties>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.5.RELEASE</version>
+        <version>2.7.18</version>
     </parent>
-
-    <properties>
-        <skipTests>true</skipTests>
-        <java.version>1.8</java.version>
-        <springfox-version>2.6.1</springfox-version>
-    </properties>
 
     <dependencies>
         <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.thymeleaf</groupId>
+            <artifactId>thymeleaf-spring5</artifactId>
+            <version>3.0.15.RELEASE</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>${springboot-version}</version>
         </dependency>
         <!-- thymeleaf -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
+            <version>${springboot-version}</version>
         </dependency>
 
-        <!--lombok-->
+        <!-- 添加Lombok依赖 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.36</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -44,6 +58,7 @@
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
+            <version>4.5.14</version>
         </dependency>
         <dependency>
             <groupId>io.springfox</groupId>
@@ -58,25 +73,36 @@
         <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
+            <version>2.13.0</version>
         </dependency>
     </dependencies>
+
     <build>
         <finalName>Swagger2Word</finalName>
         <plugins>
+            <!-- 添加Maven插件以便在编译时使用Lombok -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.36</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <encoding>utf-8</encoding>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.6</version>
+                <version>3.3.1</version>
                 <configuration>
                     <delimiters>
                         <delimiter>${*}</delimiter>
@@ -88,7 +114,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.0.1.RELEASE</version>
+                <version>3.4.1</version>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -103,10 +137,6 @@
                     </execution>
                 </executions>
             </plugin>
-		  	<plugin>
-		  		<groupId>org.springframework.boot</groupId>
-		 		<artifactId>spring-boot-maven-plugin</artifactId>
-		  	</plugin>
         </plugins>
     </build>
 </project>
