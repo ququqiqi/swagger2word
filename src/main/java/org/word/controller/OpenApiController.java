@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring5.SpringTemplateEngine;
-import org.word.service.OpenApiWordService;
+import org.word.service.TableService;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -26,14 +26,14 @@ import java.net.URLEncoder;
 import java.util.Map;
 
 @Controller
-@Api(tags = "OpenAPI")
-public class OpenApiWordController {
+@Api(tags = "OpenAPI 3.0")
+public class OpenApiController {
 
     @Value("${swagger.url}")
     private String swaggerUrl;
 
     @Autowired
-    private OpenApiWordService openApiWordService;
+    private TableService openApiTableService;
     @Autowired
     private SpringTemplateEngine springTemplateEngine;
 
@@ -57,7 +57,7 @@ public class OpenApiWordController {
     }
 
     private void generateModelData(Model model, MultipartFile jsonFile) throws IOException {
-        Map<String, Object> result = openApiWordService.tableList(jsonFile);
+        Map<String, Object> result = openApiTableService.tableList(jsonFile);
         fileName = jsonFile.getOriginalFilename();
 
         if (fileName != null) {
@@ -73,7 +73,7 @@ public class OpenApiWordController {
 
     private void generateModelData(Model model, String url, Integer download) {
         url = StringUtils.defaultIfBlank(url, swaggerUrl);
-        Map<String, Object> result = openApiWordService.tableList(url);
+        Map<String, Object> result = openApiTableService.tableList(url);
         model.addAttribute("url", url);
         model.addAttribute("download", download);
         model.addAllAttributes(result);

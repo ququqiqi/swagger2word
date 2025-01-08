@@ -1,18 +1,13 @@
 package org.word.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
 import org.word.model.ModelAttr;
 import org.word.model.Request;
 import org.word.model.Response;
 import org.word.model.Table;
-import org.word.service.OpenApiWordService;
 import org.word.utils.JsonUtils;
 import org.word.utils.RequestUtils;
 import org.word.utils.ResponseUtils;
@@ -28,67 +23,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 /**
  * @Author XiuYin.Cui
  * @Date 2018/1/12
  **/
 @SuppressWarnings({"unchecked", "rawtypes"})
-@Slf4j
 @Service
-public class OpenApiWordServiceImpl implements OpenApiWordService {
-
-    @Autowired
-    private RestTemplate restTemplate;
+public class OpenApiTableService extends TableServiceBase {
 
     @Override
-    public Map<String, Object> tableList(String swaggerUrl) {
-        Map<String, Object> resultMap = new HashMap<>();
-        try {
-            String jsonStr = restTemplate.getForObject(swaggerUrl, String.class);
-            resultMap = tableListFromString(jsonStr);
-            // log.debug(JsonUtils.writeJsonStr(resultMap));
-        } catch (Exception e) {
-            log.error("parse error", e);
-        }
-        return resultMap;
-    }
-
-    @Override
-    public Map<String, Object> tableListFromString(String jsonStr) throws IOException {
-        Map<String, Object> resultMap = new HashMap<>();
-        List<Table> result = new ArrayList<>();
-        try {
-            Map<String, Object> map = getResultFromString(result, jsonStr);
-            Map<String, List<Table>> tableMap = result.stream().parallel().collect(Collectors.groupingBy(Table::getTitle));
-            resultMap.put("tableMap", new TreeMap<>(tableMap));
-            resultMap.put("info", map.get("info"));
-
-            // log.debug(JsonUtils.writeJsonStr(resultMap));
-        } catch (Exception e) {
-            log.error("parse error", e);
-        	throw e;
-        }
-        return resultMap;
-    }
-
-	@Override
-    public Map<String, Object> tableList(MultipartFile jsonFile) throws IOException {
-        Map<String, Object> resultMap = new HashMap<>();
-        try {
-            String jsonStr = new String(jsonFile.getBytes());
-            resultMap = tableListFromString(jsonStr);
-            // log.debug(JsonUtils.writeJsonStr(resultMap));
-        } catch (Exception e) {
-            log.error("parse error", e);
-        	throw e;
-        }
-        return resultMap;
-    }
-
-    private Map<String, Object> getResultFromString(List<Table> result, String jsonStr) throws IOException {
+    protected Map<String, Object> getResultFromString(List<Table> result, String jsonStr) throws IOException {
         // convert JSON string to Map
         Map<String, Object> map = JsonUtils.readValue(jsonStr, HashMap.class);
 
@@ -158,7 +103,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
                 		Map<String, Object> responses = (LinkedHashMap) content.get("responses");
 
                 		// 9.请求参数格式，类似于 multipart/form-data
-                		List<String> requestParamsFormates = getRequestParamsFormate(content);
+                		List<String> requestParamsFormates = getRequestParamsFormat(content);
                 		String requestForm = StringUtils.join(requestParamsFormates, ",");
 
                 		// 取出来状态是200时的返回值
@@ -166,7 +111,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
                 		Map<String, Object> requestBody = (Map<String, Object>) content.get("requestBody");
 
                 		// 10.返回参数格式，类似于 application/json
-                		List<String> responseParamsFormates = getResponseParamsFormate(obj);
+                		List<String> responseParamsFormates = getResponseParamsFormat(obj);
                 		String responseForm = StringUtils.join(responseParamsFormates, ",");
 
                 		//封装Table
@@ -188,7 +133,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
 
                 		//示例
                 		table.setRequestParam(processRequestParam(table.getRequestList()));
-                		table.setResponseParam(processResponseParam1(obj, definitinMap));
+                		table.setResponseParam(processResponseParam(obj, definitinMap));
 
                 		result.add(table);
                 	} catch (Exception e) {
@@ -206,7 +151,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
     /**
      * 请求参数格式， 类似于 multipart/form-data
      */
-    private List<String> getRequestParamsFormate(Map<String, Object> obj) {
+    private List<String> getRequestParamsFormat(Map<String, Object> obj) {
         Map<String, Object> requestBody = (LinkedHashMap) obj.get("requestBody");
         List<String> requestTypes = new ArrayList();
         if (requestBody != null) {
@@ -221,7 +166,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
      * 返回参数格式，类似于 application/json
      * @throws Exception
      */
-    private List<String> getResponseParamsFormate(Map<String, Object> responseObj) {
+    private List<String> getResponseParamsFormat(Map<String, Object> responseObj) {
         Map<String, Map> content = (LinkedHashMap) responseObj.get("content");
         List<String> responseTypes = new ArrayList();
         if (content != null) {
@@ -657,64 +602,7 @@ public class OpenApiWordServiceImpl implements OpenApiWordService {
         return modeAttr;
     }
 
-    /**
-     * 处理返回值
-     *
-     * @param responseObj
-     * @return
-     */
     private String processResponseParam(Map<String, Object> responseObj, Map<String, ModelAttr> definitinMap) throws JsonProcessingException {
-        Map<String, Map> content = (Map) responseObj.get("content");
-        if (content != null) {
-            Iterator<Map.Entry<String, Map>> applications = content.entrySet().iterator();
-            while (applications.hasNext()) {
-                Map.Entry<String, Map> application = applications.next();
-
-                if (application.getValue() != null) {
-                    Map<String, Object> applicationContent = (Map<String, Object>) application.getValue();
-                    if (applicationContent != null) {
-                        Map<String, Object> schema = (Map<String, Object>) applicationContent.get("schema");
-                        String type = (String) schema.get("type");
-                        String ref = null;
-                        // 数组
-                        if ("array".equals(type)) {
-                            Map<String, Object> items = (Map<String, Object>) schema.get("items");
-                            if (items != null && items.get("$ref") != null) {
-                                ref = (String) items.get("$ref");
-                            }
-                        }
-                        // 对象ref
-                        if (schema.get("$ref") != null) {
-                            ref = (String) schema.get("$ref");
-                        }
-                        if (StringUtils.isNotEmpty(ref)) {
-                            ModelAttr modelAttr = definitinMap.get(ref);
-                            if (modelAttr != null && !CollectionUtils.isEmpty(modelAttr.getProperties())) {
-                                Map<String, Object> responseMap = new HashMap<>(8);
-                                for (ModelAttr subModelAttr : modelAttr.getProperties()) {
-                                    responseMap.put(subModelAttr.getName(), getValue(subModelAttr.getType(), subModelAttr));
-                                }
-                                return JsonUtils.writeJsonStr(responseMap);
-                            }
-                        }
-                        if (schema.get("properties") != null) {
-                            ModelAttr modelAttr = getSchemaModelAttr(schema);
-                            if (modelAttr != null) {
-                                Map<String, Object> responseMap = new HashMap<>(8);
-                                for (ModelAttr subModelAttr : modelAttr.getProperties()) {
-                                    responseMap.put(subModelAttr.getName(), getValue(subModelAttr.getType(), subModelAttr));
-                                }
-                                return JsonUtils.writeJsonStr(responseMap);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return StringUtils.EMPTY;
-    }
-
-    private String processResponseParam1(Map<String, Object> responseObj, Map<String, ModelAttr> definitinMap) throws JsonProcessingException {
         Map<String, Map> content = (Map) responseObj.get("content");
         // if (responseObj != null && content.get("application/json") != null) {
         if (content != null) {

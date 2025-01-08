@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring5.SpringTemplateEngine;
-import org.word.service.WordService;
+import org.word.service.TableService;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -27,19 +27,19 @@ import java.util.Map;
  * Created by XiuYin.Cui on 2018/1/11.
  */
 @Controller
-@Api(tags = "the toWord API")
+@Api(tags = "Swagger 2.0")
 @Slf4j
-public class WordController {
+public class SwaggerController {
 
     @Value("${swagger.url}")
     private String swaggerUrl;
 
     @Autowired
-    private WordService tableService;
+    private TableService swaggerTableService;
     @Autowired
     private SpringTemplateEngine springTemplateEngine;
 
-    private String fileName = "toWord";
+    private String fileName = "swagger_word";
 
     /**
      * 将 swagger 文档转换成 html 文档，可通过在网页上右键另存为 xxx.doc 的方式转换为 word 文档
@@ -73,7 +73,7 @@ public class WordController {
 
     private void generateModelData(Model model, String url, Integer download) {
         url = StringUtils.defaultIfBlank(url, swaggerUrl);
-        Map<String, Object> result = tableService.tableList(url);
+        Map<String, Object> result = swaggerTableService.tableList(url);
         model.addAttribute("url", url);
         model.addAttribute("download", download);
         model.addAllAttributes(result);
@@ -143,14 +143,14 @@ public class WordController {
     }
 
     private void generateModelData(Model model, String jsonStr) {
-        Map<String, Object> result = tableService.tableListFromString(jsonStr);
+        Map<String, Object> result = swaggerTableService.tableListFromString(jsonStr);
         model.addAttribute("url", "http://");
         model.addAttribute("download", 0);
         model.addAllAttributes(result);
     }
 
     private void generateModelData(Model model, MultipartFile jsonFile) {
-        Map<String, Object> result = tableService.tableList(jsonFile);
+        Map<String, Object> result = swaggerTableService.tableList(jsonFile);
         fileName = jsonFile.getOriginalFilename();
 
         if (fileName != null) {
