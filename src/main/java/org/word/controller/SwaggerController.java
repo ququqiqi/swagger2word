@@ -1,6 +1,7 @@
 package org.word.controller;
 
 import io.swagger.annotations.*;
+import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,16 +13,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
-import org.thymeleaf.context.Context;
-import org.thymeleaf.spring5.SpringTemplateEngine;
 import org.word.service.TableService;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.*;
-import java.net.URLEncoder;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Created by XiuYin.Cui on 2018/1/11.
@@ -29,138 +23,29 @@ import java.util.Map;
 @Controller
 @Api(tags = "Swagger 2.0")
 @Slf4j
-public class SwaggerController {
-
-    @Value("${swagger.url}")
-    private String swaggerUrl;
-
+public class SwaggerController extends ControllerBase{
     @Autowired
-    private TableService swaggerTableService;
-    @Autowired
-    private SpringTemplateEngine springTemplateEngine;
-
-    private String fileName = "swagger_word";
-
+    @Override
+    protected void setTableService(TableService swaggerTableService) {
+        super.setTableService(swaggerTableService);
+    }
     /**
-     * 将 swagger 文档转换成 html 文档，可通过在网页上右键另存为 xxx.doc 的方式转换为 word 文档
+     * 将 swagger 文档转换成 html 并预览，然后可以下载为 word 文档
      *
      * @param model
      * @param url   需要转换成 word 文档的资源地址
+     * @param jsonFile 需要转化成 word 文档的json文件
+     * @param jsonStr 需要转化成 word 文档的json字符串
      * @return
      */
-    @Deprecated
-    @ApiOperation(value = "将 swagger 文档转换成 html 文档，可通过在网页上右键另存为 xxx.doc 的方式转换为 word 文档", response = String.class, tags = {"Word"})
+    @ApiOperation(value = "将swagger文档转换成html预览，或者直接下载为word文档", response = String.class, tags = {"Word"})
     @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。", response = String.class)})
-    @RequestMapping(value = "/toWord", method = {RequestMethod.GET})
-    public String getWord(Model model,
-                          @ApiParam(value = "资源地址", required = false) @RequestParam(value = "url", required = false) String url,
-                          @ApiParam(value = "是否下载", required = false) @RequestParam(value = "download", required = false, defaultValue = "1") Integer download) {
-        generateModelData(model, url, download);
-
-        // Is there a localized template available ?
-        Locale currentLocale = Locale.getDefault();
-        String localizedTemplate = "word-" + currentLocale.getLanguage() + "_" + currentLocale.getCountry();
-        String fileName = "/templates/" + localizedTemplate + ".html";
-
-        if (getClass().getResourceAsStream(fileName) != null) {
-            log.info(fileName + " resource found");
-            return localizedTemplate;
-        } else {
-            log.info(fileName + " resource not found, using default");
-        }
-        return "word";
-    }
-
-    private void generateModelData(Model model, String url, Integer download) {
-        url = StringUtils.defaultIfBlank(url, swaggerUrl);
-        Map<String, Object> result = swaggerTableService.tableList(url);
-        model.addAttribute("url", url);
-        model.addAttribute("download", download);
-        model.addAllAttributes(result);
-    }
-
-    /**
-     * 将 swagger 文档一键下载为 doc 文档
-     *
-     * @param model
-     * @param url      需要转换成 word 文档的资源地址
-     * @param response
-     */
-    @ApiOperation(value = "将 swagger 文档一键下载为 doc 文档", notes = "", tags = {"Word"})
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。")})
-    @RequestMapping(value = "/downloadWord", method = {RequestMethod.GET})
-    public void word(Model model, @ApiParam(value = "资源地址", required = false) @RequestParam(required = false) String url, HttpServletResponse response) {
-        generateModelData(model, url, 0);
-        writeContentToResponse(model, response);
-    }
-
-    private void writeContentToResponse(Model model, HttpServletResponse response) {
-        Context context = new Context();
-        context.setVariables(model.asMap());
-        String content = springTemplateEngine.process("word", context);
-        response.setContentType("application/octet-stream;charset=utf-8");
-        response.setCharacterEncoding("utf-8");
-        try (BufferedOutputStream bos = new BufferedOutputStream(response.getOutputStream())) {
-            response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName + ".doc", "utf-8"));
-            byte[] bytes = content.getBytes();
-            bos.write(bytes, 0, bytes.length);
-            bos.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 将 swagger json文件转换成 word文档并下载
-     *
-     * @param model
-     * @param jsonFile 需要转换成 word 文档的swagger json文件
-     * @param response
-     * @return
-     */
-    @ApiOperation(value = "将 swagger json文件转换成 word文档并下载", notes = "", tags = {"Word"})
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。")})
-    @RequestMapping(value = "/fileToWord", method = {RequestMethod.POST})
-    public void getWord(Model model, @ApiParam("swagger json file") @Valid @RequestPart("jsonFile") MultipartFile jsonFile, HttpServletResponse response) {
-        generateModelData(model, jsonFile);
-        writeContentToResponse(model, response);
-    }
-
-    /**
-     * 将 swagger json字符串转换成 word文档并下载
-     *
-     * @param model
-     * @param jsonStr  需要转换成 word 文档的swagger json字符串
-     * @param response
-     * @return
-     */
-    @ApiOperation(value = "将 swagger json字符串转换成 word文档并下载", notes = "", tags = {"Word"})
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。")})
-    @RequestMapping(value = "/strToWord", method = {RequestMethod.POST})
-    public void getWord(Model model, @ApiParam("swagger json string") @Valid @RequestParam("jsonStr") String jsonStr, HttpServletResponse response) {
-        generateModelData(model, jsonStr);
-        writeContentToResponse(model, response);
-    }
-
-    private void generateModelData(Model model, String jsonStr) {
-        Map<String, Object> result = swaggerTableService.tableListFromString(jsonStr);
-        model.addAttribute("url", "http://");
-        model.addAttribute("download", 0);
-        model.addAllAttributes(result);
-    }
-
-    private void generateModelData(Model model, MultipartFile jsonFile) {
-        Map<String, Object> result = swaggerTableService.tableList(jsonFile);
-        fileName = jsonFile.getOriginalFilename();
-
-        if (fileName != null) {
-            fileName = fileName.replaceAll(".json", "");
-        } else {
-            fileName = "toWord";
-        }
-
-        model.addAttribute("url", "http://");
-        model.addAttribute("download", 0);
-        model.addAllAttributes(result);
+    @RequestMapping(value = "/swaggerToWord", method = {RequestMethod.POST})
+    public String toWord(HttpServletRequest request, Model model,
+                         @ApiParam(value = "资源地址", required = false) @RequestParam(value = "url", required = false) String url,
+                         @ApiParam(value = "swagger json file", required = false) @Valid @RequestPart(value = "jsonFile", required = false) MultipartFile jsonFile,
+                         @ApiParam(value = "swagger json string", required = false) @Valid @RequestParam(value = "jsonStr", required = false) String jsonStr,
+                         @ApiParam(value = "是否下载", required = false) @RequestParam(value = "download", required = false, defaultValue = "1") Integer download) {
+        return super.toWord(request, model, url, jsonFile, jsonStr, download);
     }
 }

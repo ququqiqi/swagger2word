@@ -5,93 +5,47 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.apache.commons.lang3.StringUtils;
+import javax.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
-import org.thymeleaf.context.Context;
-import org.thymeleaf.spring5.SpringTemplateEngine;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.word.service.TableService;
 
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.util.Map;
 
 @Controller
 @Api(tags = "OpenAPI 3.0")
-public class OpenApiController {
-
-    @Value("${swagger.url}")
-    private String swaggerUrl;
-
+@Slf4j
+public class OpenApiController extends ControllerBase {
     @Autowired
-    private TableService openApiTableService;
-    @Autowired
-    private SpringTemplateEngine springTemplateEngine;
-
-    private String fileName;
-
+    @Override
+    protected void setTableService(TableService openApiTableService) {
+        super.setTableService(openApiTableService);
+    }
     /**
-     * 将 swagger json文件转换成 word文档并下载
+     * 将 Open API 文档转换成 html 并预览，然后可以下载为 word 文档
      *
      * @param model
-     * @param jsonFile 需要转换成 word 文档的swagger json文件
-     * @param response
+     * @param url   需要转换成 word 文档的资源地址
+     * @param jsonFile 需要转化成 word 文档的json文件
+     * @param jsonStr 需要转化成 word 文档的json字符串
      * @return
-     * @throws Exception
      */
-    @ApiOperation(value = "将 swagger json文件转换成 word文档并下载", notes = "", tags = {"Word"})
-    @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。")})
-    @RequestMapping(value = "/OpenApiFileToWord", method = {RequestMethod.POST})
-    public void getWord(Model model, @ApiParam("swagger json file") @Valid @RequestPart("jsonFile") MultipartFile jsonFile, HttpServletResponse response) throws Exception {
-        generateModelData(model, jsonFile);
-        writeContentToResponse(model, response);
-    }
-
-    private void generateModelData(Model model, MultipartFile jsonFile) throws IOException {
-        Map<String, Object> result = openApiTableService.tableList(jsonFile);
-        fileName = jsonFile.getOriginalFilename();
-
-        if (fileName != null) {
-            fileName = fileName.replaceAll(".json", "");
-        } else {
-            fileName = "toWord";
-        }
-
-        model.addAttribute("url", "http://");
-        model.addAttribute("download", 0);
-        model.addAllAttributes(result);
-    }
-
-    private void generateModelData(Model model, String url, Integer download) {
-        url = StringUtils.defaultIfBlank(url, swaggerUrl);
-        Map<String, Object> result = openApiTableService.tableList(url);
-        model.addAttribute("url", url);
-        model.addAttribute("download", download);
-        model.addAllAttributes(result);
-    }
-
-    private void writeContentToResponse(Model model, HttpServletResponse response) {
-        Context context = new Context();
-        context.setVariables(model.asMap());
-        String content = springTemplateEngine.process("word", context);
-        response.setContentType("application/octet-stream;charset=utf-8");
-        response.setCharacterEncoding("utf-8");
-        try (BufferedOutputStream bos = new BufferedOutputStream(response.getOutputStream())) {
-            response.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName + ".doc", "utf-8"));
-            byte[] bytes = content.getBytes();
-            bos.write(bytes, 0, bytes.length);
-            bos.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @ApiOperation(value = "将 Open API 文档转换成 html 并预览，然后可以下载为 word 文档", response = String.class, tags = {"Word"})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。", response = String.class)})
+    @RequestMapping(value = "/openApiToWord", method = {RequestMethod.POST})
+    public String toWord(HttpServletRequest request, Model model,
+                         @ApiParam(value = "资源地址", required = false) @RequestParam(value = "url", required = false) String url,
+                         @ApiParam(value = "Open API json file", required = false) @Valid @RequestPart(value = "jsonFile", required = false) MultipartFile jsonFile,
+                         @ApiParam(value = "Open API json string", required = false) @Valid @RequestParam(value = "jsonStr", required = false) String jsonStr,
+                         @ApiParam(value = "是否下载", required = false) @RequestParam(value = "download", required = false, defaultValue = "1") Integer download) {
+        return super.toWord(request, model, url, jsonFile, jsonStr, download);
     }
 }

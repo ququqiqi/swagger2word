@@ -326,7 +326,7 @@ public class SwaggerTableService extends TableServiceBase {
                 }
                 child.setType(child.getType() + ":" + clsName);
             }
-            child.setDescription((String) attrInfoMap.get("description"));
+            child.setDescription((String) attrInfoMap.get("title"));
             attrList.add(child);
         }
         return attrList;

@@ -85,7 +85,7 @@
 <div style="width:1000px; margin: 0 auto">
     <div>
         <p class="doc_title" th:text="${info.title +'（'+ info.version +'）'}"></p>
-        <a class="download_btn" th:if="${download == 1}" th:href="${'/downloadWord?url='+ url}">Download</a>
+        <a class="download_btn" th:if="${download == 1}" th:href="${'/downloadWord'}">Download</a>
         <br>
     </div>
     <div th:each="tableMap:${tableMap}" style="margin-bottom:20px;">

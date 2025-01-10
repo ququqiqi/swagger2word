@@ -1,6 +1,38 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="utf8"/>
+    <title>Swagger2Word</title>
+</head>
 <body>
-<h2>Hello Swagger2word !</h2>
+<h1>Swagger2word</h1>
+<p>将swagger json文档转化为html并下载为doc文档，支持转化URL，JSON文件，JSON字符串。</p>
+<p><a href="/swagger-ui.html">Swagger文档</a></p>
+<div style="background-color:#FFF4A3;">
+    <p>转化swagger文档</p>
+    <form action="/swaggerToWord" method="post" enctype="multipart/form-data">
+        <label for="url">URL:</label><br>
+        <input type="text" id="url" name="url"><br>
+        <label for="jsonFile">JSON文件:</label><br>
+        <input type="file" id="jsonFile" name="jsonFile"><br>
+        <label for="jsonStr">JSON字符串:</label><br>
+        <input type="text" id="jsonStr" name="jsonStr"><br>
+        <br><br>
+        <input type="submit" value="转化">
+    </form>
+</div>
+<div style="background-color:#D9EEE1;">
+    <p>转化Open API文档</p>
+    <form action="/openApiToWord" method="post" enctype="multipart/form-data">
+        <label for="url">URL:</label><br>
+        <input type="text" id="url" name="url"><br>
+        <label for="jsonFile">JSON文件:</label><br>
+        <input type="file" id="jsonFile" name="jsonFile"><br>
+        <label for="jsonStr">JSON字符串:</label><br>
+        <input type="text" id="jsonStr" name="jsonStr"><br>
+        <br><br>
+        <input type="submit" value="转化">
+    </form>
+</div>
 </body>
 </html>
