@@ -3,6 +3,7 @@ package org.word.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -256,7 +257,10 @@ public class SwaggerTableService extends TableServiceBase {
         }
         Map<String, Object> modeProperties = (Map<String, Object>) swaggerMap.get(modeName).get("properties");
         if (modeProperties == null) {
-            return null;
+            List values = (List) swaggerMap.get(modeName).get("enum");
+            if (values==null) {
+                return null;
+            }
         }
 
         List<ModelAttr> attrList = getModelAttrs(swaggerMap, resMap, modeAttr, modeProperties);
@@ -326,7 +330,7 @@ public class SwaggerTableService extends TableServiceBase {
                 }
                 child.setType(child.getType() + ":" + clsName);
             }
-            child.setDescription((String) attrInfoMap.get("title"));
+            child.setDescription(Strings.join(Arrays.asList(new String[]{(String) attrInfoMap.get("title"), (String) attrInfoMap.get("description")}), '\n'));
             attrList.add(child);
         }
         return attrList;
