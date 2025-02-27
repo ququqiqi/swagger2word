@@ -40,19 +40,25 @@ public class SwaggerTableService extends TableServiceBase {
 
         //解析paths
         Map<String, Map<String, Object>> paths = (Map<String, Map<String, Object>>) map.get("paths");
-        if (paths != null) {
-            Iterator<Entry<String, Map<String, Object>>> it = paths.entrySet().iterator();
-            while (it.hasNext()) {
-                Entry<String, Map<String, Object>> path = it.next();
 
-                Iterator<Entry<String, Object>> it2 = path.getValue().entrySet().iterator();
+        // 请求参数格式，类似于 multipart/form-data
+        String requestForm = "";
+        List<String> consumes = (List) map.get("consumes");
+        if (consumes != null && !consumes.isEmpty()) {
+            requestForm = StringUtils.join(consumes, ",");
+        }
+        // 返回参数格式，类似于 application/json
+        String responseForm = "";
+        List<String> produces = (List) map.get("produces");
+        if (produces != null && !produces.isEmpty()) {
+            responseForm = StringUtils.join(produces, ",");
+        }
+        if (paths != null) {
+            for (Entry<String, Map<String, Object>> path : paths.entrySet()) {
                 // 1.请求路径
                 String url = path.getKey();
-
                 // 2. 循环解析每个子节点，适应同一个路径几种请求方式的场景
-                while (it2.hasNext()) {
-                    Entry<String, Object> request = it2.next();
-
+                for (Entry<String, Object> request : path.getValue().entrySet()) {
                     // 2. 请求方式，类似为 get,post,delete,put 这样
                     String requestType = request.getKey();
 
@@ -61,24 +67,38 @@ public class SwaggerTableService extends TableServiceBase {
                     // 4. 大标题（类说明）
                     String title = String.valueOf(((List) content.get("tags")).get(0));
 
+                    Object summary = content.get("summary");
+
                     // 5.小标题 （方法说明）
-                    String tag = String.valueOf(content.get("summary"));
+                    String tag = "";
+                    if (summary!=null){
+                        String[] summarys = summary.toString().split("\n");
+                        tag = summarys[summarys.length-1];
+                    }
 
                     // 6.接口描述
-                    String description = String.valueOf(content.get("summary"));
+                    String description = "";
+                    if (summary!=null){
+                        description=summary.toString().replaceAll("\n", "<br/>");
+                    }
+
+                    Object operationId = content.get("operationId");
+                    if (operationId!=null){
+                        description=description+"<br/>"+operationId.toString();
+                    }
 
                     // 7.请求参数格式，类似于 multipart/form-data
-                    String requestForm = "";
-                    List<String> consumes = (List) content.get("consumes");
-                    if (consumes != null && consumes.size() > 0) {
-                        requestForm = StringUtils.join(consumes, ",");
+                    String reqRequestForm = requestForm;
+                    List<String> reqConsumes = (List) content.get("consumes");
+                    if (reqConsumes != null && !reqConsumes.isEmpty()) {
+                        reqRequestForm = StringUtils.join(reqConsumes, ",");
                     }
 
                     // 8.返回参数格式，类似于 application/json
-                    String responseForm = "";
-                    List<String> produces = (List) content.get("produces");
-                    if (produces != null && produces.size() > 0) {
-                        responseForm = StringUtils.join(produces, ",");
+                    String reqResponseForm = responseForm;
+                    List<String> reqProduces = (List) content.get("produces");
+                    if (reqProduces != null && !reqProduces.isEmpty()) {
+                        reqResponseForm = StringUtils.join(reqProduces, ",");
                     }
 
                     // 9. 请求体
@@ -94,8 +114,8 @@ public class SwaggerTableService extends TableServiceBase {
                     table.setUrl(url);
                     table.setTag(tag);
                     table.setDescription(description);
-                    table.setRequestForm(requestForm);
-                    table.setResponseForm(responseForm);
+                    table.setRequestForm(reqRequestForm);
+                    table.setResponseForm(reqResponseForm);
                     table.setRequestType(requestType);
                     table.setRequestList(processRequestList(parameters, definitinMap));
                     table.setResponseList(processResponseCodeList(responses));
@@ -135,9 +155,17 @@ public class SwaggerTableService extends TableServiceBase {
                 if (param.get("format") != null) {
                     request.setType(request.getType() + "(" + param.get("format") + ")");
                 }
+                // 是否必填
+                request.setRequire(false);
+                if (param.get("required") != null) {
+                    request.setRequire((Boolean) param.get("required"));
+                }
+                // 参数说明
+                Object description = param.get("description");
+                // 参数类型
                 request.setParamType(String.valueOf(in));
                 // 考虑对象参数类型
-                if (in != null && "body".equals(in)) {
+                if ("body".equals(in)) {
                     request.setType(String.valueOf(in));
                     Map<String, Object> schema = (Map) param.get("schema");
                     Object ref = schema.get("$ref");
@@ -148,16 +176,17 @@ public class SwaggerTableService extends TableServiceBase {
                     }
                     if (ref != null) {
                         request.setType(request.getType() + ":" + ref.toString().replaceAll("#/definitions/", ""));
-                        request.setModelAttr(definitinMap.get(ref));
+                        ModelAttr modelAttr = definitinMap.get((String)ref);
+                        request.setModelAttr(modelAttr);
+                        if (modelAttr != null && description==null) {
+                            description = modelAttr.getDescription();
+                            if (description==""){
+                                description = modelAttr.getClassName();
+                            }
+                        }
                     }
                 }
-                // 是否必填
-                request.setRequire(false);
-                if (param.get("required") != null) {
-                    request.setRequire((Boolean) param.get("required"));
-                }
-                // 参数说明
-                request.setRemark(String.valueOf(param.get("description")));
+                request.setRemark(description==null?"":description.toString().replaceAll("\n", "<br/>"));
                 requestList.add(request);
             }
         }
@@ -255,16 +284,30 @@ public class SwaggerTableService extends TableServiceBase {
         } else if (modeAttr.isCompleted()) {
             return resMap.get("#/definitions/" + modeName);
         }
-        Map<String, Object> modeProperties = (Map<String, Object>) swaggerMap.get(modeName).get("properties");
+
+        Map<String,Object> modeMap = swaggerMap.get(modeName);
+
+        Object title = modeMap.get("title");
+        Object description = modeMap.get("description");
+        modeAttr.setClassName(title == null ? "" : title.toString());
+        modeAttr.setDescription(description == null ? "" : description.toString().replaceAll("\n", "<br/>"));
+
+        Map<String, Object> modeProperties = (Map<String, Object>) modeMap.get("properties");
         if (modeProperties == null) {
-            List values = (List) swaggerMap.get(modeName).get("enum");
+            List values = (List) modeMap.get("enum");
             if (values==null) {
                 return null;
             }
+            modeAttr.setEnum(true);
+            Object type = modeMap.get("type");
+            modeAttr.setType(type == null ? "" : type.toString());
+            Object defaultValue = modeMap.get("default");
+            modeAttr.setDefaultValue(defaultValue == null?"":defaultValue.toString());
+            return modeAttr;
         }
 
         List<ModelAttr> attrList = getModelAttrs(swaggerMap, resMap, modeAttr, modeProperties);
-        List allOf = (List) swaggerMap.get(modeName).get("allOf");
+        List allOf = (List) modeMap.get("allOf");
         if (allOf != null) {
             for (int i = 0; i < allOf.size(); i++) {
                 Map c = (Map) allOf.get(i);
@@ -283,15 +326,10 @@ public class SwaggerTableService extends TableServiceBase {
             }
         }
 
-        Object title = swaggerMap.get(modeName).get("title");
-        Object description = swaggerMap.get(modeName).get("description");
-        modeAttr.setClassName(title == null ? "" : title.toString());
-        modeAttr.setDescription(description == null ? "" : description.toString());
         modeAttr.setProperties(attrList);
-        Object required = swaggerMap.get(modeName).get("required");
+        Object required = modeMap.get("required");
         if (Objects.nonNull(required)) {
-            if ((required instanceof List) && !CollectionUtils.isEmpty(attrList)) {
-                List requiredList = (List) required;
+            if ((required instanceof List requiredList) && !CollectionUtils.isEmpty(attrList)) {
                 attrList.stream().filter(m -> requiredList.contains(m.getName())).forEach(m -> m.setRequire(true));
             } else if (required instanceof Boolean) {
                 modeAttr.setRequire(Boolean.parseBoolean(required.toString()));
@@ -319,6 +357,15 @@ public class SwaggerTableService extends TableServiceBase {
 
             Object ref = attrInfoMap.get("$ref");
             Object items = attrInfoMap.get("items");
+            ArrayList<String> descriptions = new ArrayList<>();
+            Object title = attrInfoMap.get("title");
+            if (title != null) {
+                descriptions.add(title.toString().replaceAll("\n", "<br/>"));
+            }
+            Object description = attrInfoMap.get("description");
+            if (description!=null){
+                descriptions.add(description.toString().replaceAll("\n", "<br/>"));
+            }
             if (ref != null || (items != null && (ref = ((Map) items).get("$ref")) != null)) {
                 String refName = ref.toString();
                 //截取 #/definitions/ 后面的
@@ -326,11 +373,17 @@ public class SwaggerTableService extends TableServiceBase {
                 modeAttr.setCompleted(true);
                 ModelAttr refModel = getAndPutModelAttr(swaggerMap, resMap, clsName);
                 if (refModel != null) {
-                    child.setProperties(refModel.getProperties());
+                    if (refModel.isEnum()) {
+                        descriptions.add(refModel.getDescription());
+                        child.setType("enum");
+                        child.setDefaultValue(refModel.getDefaultValue());
+                    } else{
+                        child.setProperties(refModel.getProperties());
+                    }
                 }
                 child.setType(child.getType() + ":" + clsName);
             }
-            child.setDescription(Strings.join(Arrays.asList(new String[]{(String) attrInfoMap.get("title"), (String) attrInfoMap.get("description")}), '\n'));
+            child.setDescription(String.join("<br/>", descriptions));
             attrList.add(child);
         }
         return attrList;
@@ -414,10 +467,10 @@ public class SwaggerTableService extends TableServiceBase {
         if (!jsonMap.isEmpty()) {
             if (jsonMap.size() == 1) {
                 for (Entry<String, Object> entry : jsonMap.entrySet()) {
-                    res += " -d '" + JsonUtils.writeJsonStr(entry.getValue()) + "'";
+                    res += "-d '"+JsonUtils.writeJsonStr(entry.getValue())+"'";
                 }
             } else {
-                res += " -d '" + JsonUtils.writeJsonStr(jsonMap) + "'";
+                res += "-d '"+JsonUtils.writeJsonStr(jsonMap)+"'";
             }
         }
         return res;
@@ -438,6 +491,11 @@ public class SwaggerTableService extends TableServiceBase {
         switch (type) {
             case "string":
                 return "string";
+            case "string(int64)":
+            case "string(int32)":
+            case "string(uint64)":
+            case "string(uint32)":
+                return "0";
             case "string(date-time)":
                 return "2020/01/01 00:00:00";
             case "integer":
@@ -450,6 +508,8 @@ public class SwaggerTableService extends TableServiceBase {
                 return true;
             case "file":
                 return "(binary)";
+            case "enum":
+                return modelAttr.getDefaultValue();
             case "array":
                 List list = new ArrayList();
                 Map<String, Object> map = new LinkedHashMap<>();
@@ -461,6 +521,7 @@ public class SwaggerTableService extends TableServiceBase {
                 list.add(map);
                 return list;
             case "object":
+            case "body":
                 map = new LinkedHashMap<>();
                 if (modelAttr != null && !CollectionUtils.isEmpty(modelAttr.getProperties())) {
                     for (ModelAttr subModelAttr : modelAttr.getProperties()) {

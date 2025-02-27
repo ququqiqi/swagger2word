@@ -5,10 +5,10 @@
     <title>toWord</title>
     <style type="text/css">
         .bg {
-            font-size: 14.5px;
-            font-weight: bold;
+            font-size: 12px;
+            font-weight: normal;
             color: #000;
-            background-color: #559e68;
+            background-color: #B6C7EA;
         }
 
         table {
@@ -19,7 +19,7 @@
         }
 
         tr {
-            height: 32px;
+            height: 25px;
             font-size: 12px;
         }
 
@@ -28,38 +28,44 @@
             border-width: 1px;
             border-style: solid;
             border-color: black;
-            height: 32px;
+            height: 25px;
             overflow: hidden;
             word-break: break-all;
             word-wrap: break-word;
-            font-size: 14.5px;
+            font-size: 12px;
         }
 
         .bg td {
-            font-size: 14.5px;
+            font-size: 12px;
         }
 
         tr td {
-            font-size: 14.5px;
+            font-size: 12px;
         }
 
-        .specialHeight {
-            height: 40px;
-        }
-
-        .first_title {
-            height: 60px;
-            line-height: 60px;
+        .service_title {
+            height: 50px;
+            line-height: 50px;
             margin: 0;
             font-weight: bold;
-            font-size: 21px;
+            font-size: 20px;
         }
 
-        .second_title {
+        .api_title {
             height: 40px;
             line-height: 40px;
             margin: 0;
-            font-size: 18.5px;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 黑体;
+        }
+
+        .api_sub_title {
+            height: 35px;
+            line-height: 35px;
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
         }
 
         .doc_title {
@@ -72,7 +78,8 @@
         }
 
         body {
-            font-family: 思源黑体 Normal;
+            font-family: 宋体;
+            color: #000;
         }
     </style>
 </head>
@@ -80,102 +87,81 @@
 <body>
 <div style="width:800px; margin: 0 auto">
     <div>
-        <p class="doc_title" th:text="${info.title +'（'+ info.version +'）'}"></p>
+        <h1 class="doc_title" th:text="${info.title +'（'+ info.version +'）'}">标题</h1>
         <a class="download_btn" th:if="${download == 1}" th:href="${'/downloadWord'}">下载文档</a>
         <br>
     </div>
-    <div th:each="tableMap:${tableMap}" style="margin-bottom:20px;">
-        <!--这个是类的说明-->
-        <h4 class="first_title" th:text="${tableMap.key}"></h4>
+    <h2>1. 引言</h2>
+    <h2>2. 接口定义</h2>
+    <div th:each="tableMap,tmStat:${tableMap}" style="margin-bottom:20px;">
+        <h3 class="service_title" th:text="|${titlePrefix}${tmStat.count} ${tableMap.key}|">服务名称</h3>
         <div th:each="table,tableStat:${tableMap.value}">
 
             <!--这个是每个请求的说明，方便生成文档后进行整理-->
-            <h5 class="second_title" th:text="${tableStat.count} + '）' + ${table.tag}"></h5>
-
-            <table border="1" cellspacing="0" cellpadding="0" width="100%">
+            <h4 class="api_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count} ${table.tag}|">接口名称</h4>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.1 接口功能说明|">1 接口功能说明</h5>
+            <p th:utext="${table.description}">功能说明<br/>功能说明</p>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.2 接口调用说明|">2 接口调用说明</h5>
+            <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td class="bg" width="25%">请求地址</td>
+                    <td th:text="${table.url}"></td>
+                </tr>
+                <tr>
+                    <td class="bg">请求方式</td>
+                    <td th:text="${#strings.toUpperCase(table.requestType)}"></td>
+                </tr>
+                <tr>
+                    <td class="bg">请求编码</td>
+                    <td th:text="${table.requestForm}"></td>
+                </tr>
+                <tr>
+                    <td class="bg">响应类型</td>
+                    <td th:text="${table.responseForm}"></td>
+                </tr>
+            </table>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.3 请求参数说明|">3 请求参数说明</h5>
+            <table cellpadding="0" cellspacing="0" style="width:100%;">
                 <tr class="bg">
-                    <td colspan="5" th:text="${table.tag}"></td>
-                </tr>
-                <tr>
-                    <td width="25%">接口描述</td>
-                    <td colspan="4" th:text="${table.description}"></td>
-                </tr>
-                <tr>
-                    <td>URL</td>
-                    <td colspan="4" th:text="${table.url}"></td>
-                </tr>
-                <tr>
-                    <td>请求方式</td>
-                    <td colspan="4" th:text="${#strings.toUpperCase(table.requestType)}"></td>
-                </tr>
-                <tr>
-                    <td>请求类型</td>
-                    <td colspan="4" th:text="${table.requestForm}"></td>
-                </tr>
-                <tr>
-                    <td>返回类型</td>
-                    <td colspan="4" th:text="${table.responseForm}"></td>
-                </tr>
-
-                <tr class="bg">
-                    <td>参数名</td>
-                    <td width="15%">数据类型</td>
-                    <td width="15%">参数类型</td>
-                    <td width="15%">是否必填</td>
-                    <td width="29%">说明</td>
+                    <td>参数名称</td>
+                    <td>数据类型</td>
+                    <td>是否必填</td>
+                    <td>说明</td>
                 </tr>
 
                 <th:block th:each="request, c:${table.requestList}">
                     <tr>
-                        <td align="left" th:text="${c.count} + '.' + ${request.name}"></td>
+                        <td style="text-align:left;" th:text="${c.count} + '.' + ${request.name}"></td>
                         <td th:text="${request.type}"></td>
-                        <td th:text="${request.paramType}"></td>
                         <td th:if="${request.require}" th:text="Y"></td>
                         <td th:if="${!request.require}" th:text="N"></td>
-                        <td th:text="${request.remark}"></td>
-                        <!--                        <td th:if="${request.modelAttr}" th:text="asdfagadfg"></td>-->
+                        <td th:utext="${request.remark}"></td>
+                        <!-- <td th:if="${request.modelAttr}" th:text="blablabla"></td>-->
                     </tr>
                     <th:block th:if="${request.modelAttr}">
                         <tbody th:include="this::request(${request.modelAttr.properties},${c.count} + '.', 1)"/>
                     </th:block>
 
-
                 </th:block>
-
-                <tr class="bg">
-                    <td>状态码</td>
-                    <td colspan="2">描述</td>
-                    <td colspan="2">说明</td>
-                </tr>
-
-                <tr th:each="response:${table.responseList}">
-                    <td th:text="${response.name}"></td>
-                    <td colspan="2" th:text="${response.description}"></td>
-                    <td colspan="2" th:text="${response.remark}"></td>
-                </tr>
-
-                <tr class="bg">
-                    <td>返回属性名</td>
-                    <td colspan="2">类型</td>
-                    <td colspan="2">说明</td>
-                </tr>
-
-                <!--               对返回参数 递归生成行-->
-                <tbody th:include="this::response(${table.modelAttr.properties},'', 1)"/>
-
-                <tr class="bg">
-                    <td colspan="5">示例</td>
-                </tr>
-                <tr class="specialHeight">
-                    <td class="bg">请求参数</td>
-                    <td colspan="4" th:text="${table.requestParam}"></td>
-                </tr>
-                <tr class="specialHeight">
-                    <td class="bg">返回值</td>
-                    <td colspan="4" th:text="${table.responseParam}"></td>
-                </tr>
-
             </table>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.4 请求示例|">4 请求示例</h5>
+            <pre><code th:text="${table.requestParam}">{
+    "example": "value"
+}</code></pre>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.5 返回参数说明|">5 返回参数说明</h5>
+            <table cellpadding="0" cellspacing="0" style="width:100%;">
+                <tr class="bg">
+                    <td>参数名称</td>
+                    <td>参数类型</td>
+                    <td>参数说明</td>
+                </tr>
+                <!-- 对返回参数 递归生成行-->
+                <tbody th:include="this::response(${table.modelAttr.properties},'', 1)"/>
+            </table>
+            <h5 class="api_sub_title" th:text="|${titlePrefix}${tmStat.count}.${tableStat.count}.6 返回值示例|">6 返回值示例</h5>
+            <pre><code th:text="${table.responseParam}">{
+    "example": "value"
+}</code></pre>
         </div>
     </div>
 </div>
@@ -183,13 +169,12 @@
 <th:block th:fragment="request(properties,count, lv)">
     <th:block th:each="p,c : ${properties}">
         <tr>
-            <td align="left" th:text="${count} + '' + ${c.count} + '.' + ${p.name}"
-                th:style="|padding-left:${10*lv}px|"></td>
+            <td th:text="${count} + '' + ${c.count} + '.' + ${p.name}"
+                th:style="|text-align:left;|"></td>
             <td th:text="${p.type}"></td>
-            <td></td>
             <td th:if="${p.require}" th:text="Y"></td>
             <td th:if="${!p.require}" th:text="N"></td>
-            <td th:text="${p.description}"></td>
+            <td th:utext="${p.description}"></td>
         </tr>
         <th:block th:unless="${#lists.isEmpty(p.properties)}"
                   th:include="this::request(${p.properties},${count} + '' + ${c.count} + '.',${lv+1})"/>
@@ -199,14 +184,15 @@
 <th:block th:fragment="response(properties,count, lv)">
     <th:block th:each="p,c : ${properties}">
         <tr>
-            <td align="left" th:text="${count} + '' + ${c.count} + '.' + ${p.name}"
-                th:style="|padding-left:${10*lv}px|"></td>
-            <td colspan="2" th:text="${p.type}"></td>
-            <td colspan="2" th:text="${p.description}"></td>
+            <td th:text="${count} + '' + ${c.count} + '.' + ${p.name}"
+                th:style="|text-align:left;|"></td>
+            <td th:text="${p.type}"></td>
+            <td th:utext="${p.description}"></td>
         </tr>
         <th:block th:unless="${#lists.isEmpty(p.properties)}"
                   th:include="this::response(${p.properties},${count} + '' + ${c.count} + '.',${lv+1})"/>
     </th:block>
 </th:block>
+
 </body>
 </html>

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.ResponseEntity;
 import org.word.service.TableService;
 
 import javax.validation.Valid;
@@ -41,7 +42,7 @@ public class SwaggerController extends ControllerBase{
     @ApiOperation(value = "将swagger文档转换成html预览，或者直接下载为word文档", response = String.class, tags = {"Word"})
     @ApiResponses(value = {@ApiResponse(code = 200, message = "请求成功。", response = String.class)})
     @RequestMapping(value = "/swaggerToWord", method = {RequestMethod.POST})
-    public String toWord(HttpServletRequest request, Model model,
+    public ResponseEntity<String> toWord(HttpServletRequest request, Model model,
                          @ApiParam(value = "资源地址", required = false) @RequestParam(value = "url", required = false) String url,
                          @ApiParam(value = "swagger json file", required = false) @Valid @RequestPart(value = "jsonFile", required = false) MultipartFile jsonFile,
                          @ApiParam(value = "swagger json string", required = false) @Valid @RequestParam(value = "jsonStr", required = false) String jsonStr,

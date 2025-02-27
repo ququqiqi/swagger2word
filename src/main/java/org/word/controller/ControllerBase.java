@@ -6,10 +6,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ViewResolver;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.context.IContext;
+import org.thymeleaf.spring5.SpringTemplateEngine;
 import org.word.service.TableService;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
 
@@ -17,6 +26,8 @@ import java.util.Map;
 public abstract class ControllerBase {
     @Value("${swagger.url}")
     private String swaggerUrl;
+    @Autowired
+    private SpringTemplateEngine springTemplateEngine;
 
     @Autowired
     protected void setTableService(TableService tableService) {
@@ -25,8 +36,9 @@ public abstract class ControllerBase {
 
     protected TableService tableService;
 
-    protected String toWord(HttpServletRequest request, Model model, String url, MultipartFile jsonFile, String jsonStr, Integer download) {
+    protected ResponseEntity<String> toWord(HttpServletRequest request, Model model, String url, MultipartFile jsonFile, String jsonStr, Integer download) {
         log.info("to word {}, {}, {}, {}", url, jsonFile, jsonStr, download);
+        model.addAttribute("titlePrefix","2.");
         if (url!=null&&!url.isEmpty()){
             generateModelDataFromUrl(model, url, download);
         } else if (jsonFile!=null&&!jsonFile.isEmpty()){
@@ -37,6 +49,8 @@ public abstract class ControllerBase {
             generateModelDataFromUrl(model, "", download);
         }
 
+        log.info("model data: {}", model);
+
         // 将模型数据存储在会话中
         HttpSession session = request.getSession();
         session.setAttribute("model", model);
@@ -45,14 +59,21 @@ public abstract class ControllerBase {
         Locale currentLocale = Locale.getDefault();
         String localizedTemplate = "word-" + currentLocale.getLanguage() + "_" + currentLocale.getCountry();
         String fileName = "/templates/" + localizedTemplate + ".html";
-
+        String template = "word";
         if (getClass().getResourceAsStream(fileName) != null) {
             log.info(fileName + " resource found");
-            return localizedTemplate;
+            template = localizedTemplate;
         } else {
             log.info(fileName + " resource not found, using default");
         }
-        return "word";
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Last-Modified", ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME));
+        Context context = new Context();
+        context.setVariables(model.asMap());
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(springTemplateEngine.process(template, context)); // 使用Thymeleaf
     }
 
     private String outputFilename(String filename){

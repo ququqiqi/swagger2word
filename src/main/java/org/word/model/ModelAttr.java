@@ -1,8 +1,10 @@
 package org.word.model;
 
 import lombok.Data;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,48 +17,24 @@ import java.util.List;
 @Data
 public class ModelAttr implements Serializable {
 
-    public String getClassName() {
-		return className;
-	}
-
 	public void setClassName(String className) {
 		this.className = className;
-	}
-
-	public String getName() {
-		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
 	}
 
-	public String getType() {
-		return type;
-	}
-
 	public void setType(String type) {
 		this.type = type;
-	}
-
-	public Boolean getRequire() {
-		return require;
 	}
 
 	public void setRequire(Boolean require) {
 		this.require = require;
 	}
 
-	public String getDescription() {
-		return description;
-	}
-
 	public void setDescription(String description) {
 		this.description = description;
-	}
-
-	public List<ModelAttr> getProperties() {
-		return properties;
 	}
 
 	public void setProperties(List<ModelAttr> properties) {
@@ -71,10 +49,7 @@ public class ModelAttr implements Serializable {
 		this.isCompleted = isCompleted;
 	}
 
-	public static long getSerialversionuid() {
-		return serialVersionUID;
-	}
-
+	@Serial
 	private static final long serialVersionUID = -4074067438450613643L;
 
     /**
@@ -84,11 +59,13 @@ public class ModelAttr implements Serializable {
     /**
      * 属性名
      */
-    private String name = StringUtils.EMPTY;
+    @Getter
+	private String name = StringUtils.EMPTY;
     /**
      * 类型
      */
-    private String type = StringUtils.EMPTY;
+    @Getter
+	private String type = StringUtils.EMPTY;
     /**
      * 是否必填
      */
@@ -96,14 +73,34 @@ public class ModelAttr implements Serializable {
     /**
      * 属性描述
      */
-    private String description;
+    @Getter
+	private String description;
+
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+
+	@Getter
+	private String defaultValue = StringUtils.EMPTY;
+
     /**
      * 嵌套属性列表
      */
-    private List<ModelAttr> properties = new ArrayList<>();
+    @Getter
+	private List<ModelAttr> properties = new ArrayList<>();
 
     /**
      * 是否加载完成，避免循环引用
      */
     private boolean isCompleted = false;
+
+	public boolean isEnum() {
+		return isEnum;
+	}
+
+	public void setEnum(boolean anEnum) {
+		isEnum = anEnum;
+	}
+
+	private boolean isEnum = false;
 }
