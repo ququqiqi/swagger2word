@@ -1,14 +1,11 @@
 ### 使用步骤（Google Chrome）
-1. 启动工程，访问地址： http://127.0.0.1:8080/swagger-ui.html
-2. swagger2Word 提供了多种方式生成 word 文档，可以通过 swagger json 的资源地址，例如：https://petstore.swagger.io/v2/swagger.json ；可以通过上传 json 文件；甚至可以直接输入 json 字符串。  
-![Image text](https://github.com/JMCuixy/swagger2word/blob/master/swagger2word.jpg)
-3. 生成的 WORD 示例：  
-![Image text](https://github.com/JMCuixy/swagger2word/blob/master/demo_word.jpg)
+1. 启动工程，浏览器访问地址： http://localhost:9000
+2. Swagger2Word 提供了多种方式生成 word 文档，可以通过 swagger json 的资源地址，例如：https://petstore.swagger.io/v2/swagger.json ；可以通过上传 json 文件；甚至可以直接输入 json 字符串。
+3. 在页面上选择一种方式提供json文件后，点击转换即可预览转换的结果，点击右上角的下载文档即可将结果下载为doc文件。
 
-<br>
-<br>
-<br>
-<p>--------------版本迭代历程，感谢各位小伙伴的支持--------------</p>
+*****
+
+### 原项目版本迭代
 
 #### 版本： SwaggerToWord 1.0 （2018-01-18）
 1. 一个Swagger API 文档转 Word 文档的工具项目 
