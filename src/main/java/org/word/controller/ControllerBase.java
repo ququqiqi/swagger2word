@@ -38,7 +38,6 @@ public abstract class ControllerBase {
 
     protected ResponseEntity<String> toWord(HttpServletRequest request, Model model, String url, MultipartFile jsonFile, String jsonStr, Integer download) {
         log.info("to word {}, {}, {}, {}", url, jsonFile, jsonStr, download);
-        model.addAttribute("titlePrefix","2.");
         if (url!=null&&!url.isEmpty()){
             generateModelDataFromUrl(model, url, download);
         } else if (jsonFile!=null&&!jsonFile.isEmpty()){

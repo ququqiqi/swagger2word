@@ -457,23 +457,23 @@ public class SwaggerTableService extends TableServiceBase {
                 }
             }
         }
-        String res = "";
+        List<String> res = new ArrayList<String>();
         if (!queryMap.isEmpty()) {
-            res += getUrlParamsByMap(queryMap);
+            res.add(getUrlParamsByMap(queryMap));
         }
         if (!headerMap.isEmpty()) {
-            res += " " + getHeaderByMap(headerMap);
+            res.add(getHeaderByMap(headerMap));
         }
         if (!jsonMap.isEmpty()) {
             if (jsonMap.size() == 1) {
                 for (Entry<String, Object> entry : jsonMap.entrySet()) {
-                    res += "-d '"+JsonUtils.writeJsonStr(entry.getValue())+"'";
+                    res.add("-d '"+JsonUtils.writeJsonStr(entry.getValue())+"'");
                 }
             } else {
-                res += "-d '"+JsonUtils.writeJsonStr(jsonMap)+"'";
+                res.add("-d '"+JsonUtils.writeJsonStr(jsonMap)+"'");
             }
         }
-        return res;
+        return String.join(" ",res);
     }
 
     /**
@@ -542,6 +542,7 @@ public class SwaggerTableService extends TableServiceBase {
             return "";
         }
         StringBuilder sBuilder = new StringBuilder();
+        sBuilder.append("?");
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             sBuilder.append(entry.getKey() + "=" + entry.getValue());
             sBuilder.append("&");

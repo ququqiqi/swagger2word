@@ -93,7 +93,7 @@
     </div>
     <h2>1. 引言</h2>
     <h2>2. 接口定义</h2>
-    <div th:each="tableMap,tmStat:${tableMap}" style="margin-bottom:20px;">
+    <div th:with="titlePrefix='2.'" th:each="tableMap,tmStat:${tableMap}" style="margin-bottom:20px;">
         <h3 class="service_title" th:text="|${titlePrefix}${tmStat.count} ${tableMap.key}|">服务名称</h3>
         <div th:each="table,tableStat:${tableMap.value}">
 
